@@ -1,0 +1,38 @@
+syntax: glob
+
+# Build artifacts
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# Dependencies
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfvars
+
+# Kubernetes
+kubeconfig
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env
+.env
+.env.local

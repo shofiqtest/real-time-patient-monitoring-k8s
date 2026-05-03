@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: patient-monitoring
+  labels:
+    name: patient-monitoring
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: patient-monitoring-quota
+  namespace: patient-monitoring
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    limits.cpu: "20"
+    limits.memory: "40Gi"
+    pods: "100"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: patient-monitoring-network-policy
+  namespace: patient-monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: patient-monitoring
+    - podSelector: {}
+  egress:
+  - to:
+    - namespaceSelector: {}

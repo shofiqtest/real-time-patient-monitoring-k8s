@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-monitoring-backend
+  namespace: patient-monitoring
+  labels:
+    app: patient-monitoring-backend
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: patient-monitoring-backend
+  template:
+    metadata:
+      labels:
+        app: patient-monitoring-backend
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: patient-monitoring-backend
+      initContainers:
+      - name: wait-for-db
+        image: timescale/timescaledb:latest-pg15
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until pg_isready -h patient-monitoring-db -U postgres; do echo "Waiting for database..."; sleep 2; done']
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      containers:
+      - name: backend
+        image: patient-monitoring-backend:v4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: patient-monitoring-config
+              key: log_level
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: patient-monitoring-secrets
+              key: database_url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: patient-monitoring-secrets
+              key: redis_url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: patient-monitoring-secrets
+              key: jwt_secret
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        securityContext:
+          runAsNonRoot: false
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - patient-monitoring-backend
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-monitoring-backend
+  namespace: patient-monitoring
+  labels:
+    app: patient-monitoring-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: patient-monitoring-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  sessionAffinity: None

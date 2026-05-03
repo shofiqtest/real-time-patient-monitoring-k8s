@@ -1,0 +1,103 @@
+# Default values for patient-monitoring Helm chart
+# This is a YAML-formatted file with default values
+
+# Deployment replicas
+replicaCount: 3
+
+image:
+  repository: patient-monitoring-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: patient-monitoring.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: patient-monitoring-tls
+      hosts:
+        - patient-monitoring.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - patient-monitoring-backend
+          topologyKey: kubernetes.io/hostname
+
+# Database configuration
+database:
+  enabled: true
+  type: postgresql
+  replicas: 1
+  storage: 100Gi
+
+# Redis configuration
+redis:
+  enabled: true
+  replicas: 2
+  memory: 512Mi
+
+# Monitoring and observability
+monitoring:
+  prometheus:
+    enabled: true
+    interval: 30s
+  grafana:
+    enabled: true
+    adminPassword: admin
+  elasticsearch:
+    enabled: true
+    replicas: 2
+
+# Application configuration
+config:
+  logLevel: INFO
+  environment: production
+  maxConnections: 100
+  cacheTTL: 3600
+
+# Secrets
+secrets:
+  databaseUrl: postgresql://postgres:password@patient-monitoring-db:5432/patient_monitoring
+  redisUrl: redis://patient-monitoring-redis:6379
+  jwtSecret: your-jwt-secret

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: patient-monitoring-config
+  namespace: patient-monitoring
+data:
+  log_level: "INFO"
+  environment: "production"
+  max_connections: "100"
+  cache_ttl: "3600"

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-monitoring-redis
+  namespace: patient-monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: patient-monitoring-redis
+  template:
+    metadata:
+      labels:
+        app: patient-monitoring-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: redis
+          containerPort: 6379
+          protocol: TCP
+        command:
+        - redis-server
+        - "--appendonly"
+        - "yes"
+        - "--maxmemory"
+        - "512mb"
+        - "--maxmemory-policy"
+        - "allkeys-lru"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - patient-monitoring-redis
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-monitoring-redis
+  namespace: patient-monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: patient-monitoring-redis
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
