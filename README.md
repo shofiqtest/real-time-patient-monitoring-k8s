@@ -288,7 +288,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 ## 👨‍💼 Author
 
-Md Shofiqul Islam - DevOps & Platform Engineering
+Md Shofiqul Islam — SoC Software Engineer | Embedded Systems | Cloud-Native & Kubernetes Enthusiast
 
 ## 🤝 Support
 
