@@ -59,7 +59,7 @@ A production-grade, scalable real-time patient monitoring platform deployed on K
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/shofiqtest/real-time-patient-monitoring-k8s
 cd real-time-patient-monitoring
 
 # Create virtual environment
@@ -296,5 +296,5 @@ For issues and questions, please open an issue on GitHub.
 
 ---
 
-**Last Updated**: May 3, 2026  
+**Last Updated**: May 3, 2026
 **Version**: 1.0.0
